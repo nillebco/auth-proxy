@@ -28,7 +28,6 @@ app.add_middleware(
 
 def create_cache_key(request: requests.PreparedRequest, **kwargs):
     """Custom cache key function that includes the request body for POST requests."""
-    print(kwargs)
     key_parts = [request.method, request.url]
     if request.method == "POST":
         body_serialized = (
