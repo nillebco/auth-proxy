@@ -1,0 +1,26 @@
+if [ "$1" == "setup" ]; then
+    set -eux
+    if ! command -v uv >/dev/null 2>&1; then
+        pip install uv
+    fi
+    if [ ! -d ".venv" ]; then
+        uv venv
+    fi
+    source .venv/bin/activate
+    uv pip install -r requirements.txt
+    uv pip install -r dev-requirements.txt
+    pre-commit install
+elif [ "$1" == "serve" ]; then
+    source .venv/bin/activate
+    IS_DEV=true uvicorn proxy.app:app --reload --port 8015
+elif [ "$1" == "wrap" ]; then
+    source .venv/bin/activate
+    $2 $3 $4 $5 $6 $7 $8 $9 ${10} ${11} ${12} ${13} ${14} ${15} ${16} ${17} ${18} ${19} ${20}
+elif [ "$1" == "compile" ]; then
+    source .venv/bin/activate
+    uv pip compile dev-requirements.in requirements.in > dev-requirements.txt
+    uv pip compile requirements.in > requirements.txt
+elif [ "$1" == "sync" ]; then
+    source .venv/bin/activate
+    uv pip sync dev-requirements.txt requirements.txt
+fi
