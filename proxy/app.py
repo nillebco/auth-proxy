@@ -1,11 +1,15 @@
 # -*- coding: utf-8 -*-
+import base64
+import hashlib
+import json
+import logging
 from urllib.parse import urlparse
 
 import requests
+import requests_cache
 import yaml
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-import requests_cache
 
 app = FastAPI()
 
@@ -21,6 +25,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+def create_cache_key(request: requests.PreparedRequest, **kwargs):
+    """Custom cache key function that includes the request body for POST requests."""
+    print(kwargs)
+    key_parts = [request.method, request.url]
+    if request.method == "POST":
+        body_serialized = (
+            base64.b64encode(request.body).decode("utf-8") if request.body else ""
+        )
+        key_parts.append(body_serialized)
+    return hashlib.sha256(json.dumps(key_parts).encode()).hexdigest()
+
+
 method_requests_mapping = {
     "GET": requests.get,
     "HEAD": requests.head,
@@ -35,6 +52,7 @@ requests_cache.install_cache(
     "cache.sqlite",
     backend="sqlite",
     allowable_methods=method_requests_mapping.keys(),
+    key_fn=create_cache_key,
 )
 
 
@@ -55,6 +73,7 @@ def get_authentication_creds(path_name: str):
     creds = CREDENTIALS_DICT.get(hostname, {}) or {}
     header = creds.get("header", "x-api-key")
     value = creds.get("value", "la donna è mobile qual piùma al vento")
+    logging.info(hostname, header, f"{value[:2]}..REDACTED..{value[-2:]}")
     return header, value
 
 
